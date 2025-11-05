@@ -15,6 +15,24 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
+// Fonction pour vérifier si un nom de fichier est unique
+function nomUnique(nomPropose, callback) {
+  const fichierPath = path.join(outputDir, `${nomPropose}.png`);
+  if (fs.existsSync(fichierPath)) {
+    console.log(`Le fichier "${nomPropose}.png" existe déjà. Choisissez un autre nom.`);
+    rl.question('Entrez un nouveau nom du fichier (sans extension, ex: mon-qr) : ', (nouveauNom) => {
+      if (!nouveauNom) {
+        console.log('Erreur : Le nom ne peut pas être vide.');
+        nomUnique(nomPropose, callback); // Relance si vide
+        return;
+      }
+      nomUnique(nouveauNom, callback); // Vérifie le nouveau
+    });
+  } else {
+    callback(nomPropose); // Nom OK, passe à la génération
+  }
+}
+
 // Fonction pour générer et sauvegarder le QR code
 function genererQRCode() {
   // Demander le lien
@@ -25,7 +43,7 @@ function genererQRCode() {
       return;
     }
 
-    // Demander le nom du fichier
+    // Demander le nom du fichier et vérifier l'unicité
     rl.question('Entrez le nom du fichier (sans extension, ex: mon-qr) : ', (nomFichier) => {
       if (!nomFichier) {
         console.log('Erreur : Le nom du fichier ne peut pas être vide.');
@@ -33,24 +51,26 @@ function genererQRCode() {
         return;
       }
 
-      // Nom complet du fichier avec extension PNG
-      const fichierPath = path.join(outputDir, `${nomFichier}.png`);
+      // Vérifier et obtenir un nom unique
+      nomUnique(nomFichier, (nomFinal) => {
+        const fichierPath = path.join(outputDir, `${nomFinal}.png`);
 
-      // Générer le QR code en PNG
-      QRCode.toFile(fichierPath, lien, {
-        width: 300,  // Largeur du QR code
-        margin: 2,   // Marge autour
-        color: {
-          dark: '#000000',  // Couleur des pixels noirs
-          light: '#FFFFFF'  // Couleur de fond
-        }
-      }, (err) => {
-        if (err) {
-          console.error('Erreur lors de la génération :', err);
-        } else {
-          console.log(`QR code généré et sauvegardé : ${fichierPath}`);
-        }
-        rl.close();
+        // Générer le QR code en PNG
+        QRCode.toFile(fichierPath, lien, {
+          width: 300,  // Largeur du QR code
+          margin: 2,   // Marge autour
+          color: {
+            dark: '#000000',  // Couleur des pixels noirs
+            light: '#FFFFFF'  // Couleur de fond
+          }
+        }, (err) => {
+          if (err) {
+            console.error('Erreur lors de la génération :', err);
+          } else {
+            console.log(`QR code généré et sauvegardé : ${fichierPath}`);
+          }
+          rl.close();
+        });
       });
     });
   });
